@@ -4,18 +4,17 @@
 #include <vector>
 #include <cstdint>
 
-template <typename T>
 class zstd {
 private:
-    std::vector<T> buffer_;
+    std::vector<uint8_t> buffer_;
 public:
-    std::vector<T> compress(const std::vector<T>& data, int compress_level) {
-        size_t estimated = ZSTD_compressBound(data.size());
+    std::vector<uint8_t> compress(const std::vector<uint8_t>& data, int compress_level) {
+        auto const bound = ZSTD_compressBound(data.size());
 
-        buffer_.resize(estimated);
+        buffer_.resize(bound);
 
         auto compressed_size =
-                ZSTD_compress((void*)buffer_.data(), estimated,
+                ZSTD_compress(reinterpret_cast<void *>(buffer_.data()), bound,
                               data.data(), data.size(), compress_level);
 
         buffer_.resize(compressed_size);
@@ -24,14 +23,17 @@ public:
         return buffer_;
     }
 
-    std::vector<T> decompress(const std::vector<T>& data) {
+    std::vector<uint8_t> decompress(const std::vector<uint8_t>& data) {
         auto const estimated =
-                ZSTD_getDecompressedSize(data.data(), data.size());
+                ZSTD_getFrameContentSize(data.data(), data.size());
+
+        if (estimated == ZSTD_CONTENTSIZE_UNKNOWN || estimated == ZSTD_CONTENTSIZE_ERROR)
+            return {};
 
         buffer_.resize(estimated);
 
         size_t const decompressed_size = ZSTD_decompress(
-                (void*)buffer_.data(), estimated, data.data(), data.size());
+                reinterpret_cast<void *>(buffer_.data()), estimated, data.data(), data.size());
 
         buffer_.resize(decompressed_size);
         buffer_.shrink_to_fit();
