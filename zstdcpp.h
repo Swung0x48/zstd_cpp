@@ -28,7 +28,7 @@ public:
                 ZSTD_getDecompressedSize(data.data(), data.size());
 
         if (estimated == ZSTD_CONTENTSIZE_UNKNOWN || estimated == ZSTD_CONTENTSIZE_ERROR)
-            throw std::runtime_error("Decompressed size unknown, or error occurred when estimating.");
+            throw std::overflow_error("Decompressed size unknown, or error occurred when estimating.");
 
         if (estimated > limit)
             throw std::overflow_error("Estimated decompressed size larger than limit. (" + std::to_string(estimated) + "/" + std::to_string(limit) + ")");
