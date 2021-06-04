@@ -23,12 +23,15 @@ public:
         return buffer_;
     }
 
-    std::vector<uint8_t> decompress(const std::vector<uint8_t>& data) {
+    std::vector<uint8_t> decompress(const std::vector<uint8_t>& data, size_t limit = -1) {
         auto const estimated =
-                ZSTD_getFrameContentSize(data.data(), data.size());
+                ZSTD_getDecompressedSize(data.data(), data.size());
 
         if (estimated == ZSTD_CONTENTSIZE_UNKNOWN || estimated == ZSTD_CONTENTSIZE_ERROR)
-            return {};
+            throw std::runtime_error("Decompressed size unknown, or error occurred when estimating.");
+
+        if (estimated > limit)
+            throw std::overflow_error("Estimated decompressed size larger than limit. (" + std::to_string(estimated) + "/" + std::to_string(limit) + ")");
 
         buffer_.resize(estimated);
 
